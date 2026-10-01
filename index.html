@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f1ea">
+<meta name="description" content="Homework checklist, focus timer and joke flashcards for students.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Homework">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<title>Homework</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --tb:83px; --stage:#e6e2db; --bg:#f4f1ea; --ink:#1d1b17; --muted:#6b665c; --line:#e1dccf;
+  --card:#fffdf9; --orange:#f47b38; --green:#4cb86b; --red:#b5402a;
+  --head:"Bricolage Grotesque","DM Sans",system-ui,sans-serif;
+  --body:"DM Sans",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--stage);font-family:var(--body);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.stage{display:flex;gap:56px;align-items:flex-start;justify-content:center}
+.wrap{position:relative}
+.phone{position:absolute;left:0;top:0;width:390px;height:844px;transform-origin:0 0}
+.bezel{position:absolute;inset:-12px;border-radius:66px;background:#121110;box-shadow:0 30px 60px -20px rgba(40,30,15,.45),0 0 0 2px #2a2823 inset}
+.glass{position:absolute;inset:0;border-radius:54px;background:var(--bg);overflow:hidden;isolation:isolate}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:34px;border-radius:20px;background:#000;z-index:30}
+.status{position:absolute;top:0;left:0;right:0;height:54px;display:flex;justify-content:space-between;align-items:center;padding:6px 34px 0 40px;font-weight:700;font-size:16px;z-index:25;pointer-events:none}
+.status .ic{display:flex;gap:6px;align-items:center}
+.screen{position:absolute;inset:0 0 var(--tb) 0;padding:62px 24px 0;overflow-y:auto;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen.jokes{display:flex;flex-direction:column;overflow:hidden}
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:var(--tb);padding:8px 36px 0;display:flex;justify-content:space-around;background:rgba(244,241,234,.92);backdrop-filter:blur(14px);border-top:1px solid var(--line);z-index:20}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:#9a9486;font-size:11px;font-weight:600;width:110px;height:50px;position:relative;transition:color .2s}
+.tab svg{width:26px;height:26px}
+.tab.on{color:var(--ink)}
+.tab.on svg{color:var(--orange)}
+.badge{position:absolute;top:-2px;left:58px;min-width:18px;height:18px;border-radius:9px;background:var(--orange);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.home{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--ink);z-index:21}
+
+/* headers */
+.eyebrow{font-size:15px;font-weight:500;color:var(--muted)}
+h1{font-family:var(--head);font-weight:800;font-size:42px;letter-spacing:-.02em;line-height:1.05}
+.hrow{display:flex;justify-content:space-between;align-items:flex-start}
+.fab{width:66px;height:66px;margin-top:-6px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px -6px rgba(244,123,56,.6);transition:transform .15s}
+.fab:active{transform:scale(.92)}
+.fab svg{width:26px;height:26px}
+.pill{background:#ffdcc9;color:#9a3a08;font-weight:700;font-size:15px;padding:12px 18px;border-radius:24px;margin-top:2px;white-space:nowrap}
+.pill.bump{animation:bump .4s}
+@keyframes bump{40%{transform:scale(1.18)}}
+
+/* jokes */
+.segs{display:flex;gap:6px;margin:22px 0 20px}
+.seg{flex:1;height:5px;border-radius:3px;background:#e4dfd3;transition:background .25s}
+.seg.seen{background:var(--orange)}
+.seg.cur{background:var(--ink)}
+.deck{position:relative;flex:1;margin-bottom:26px;min-height:0}
+.ghost{position:absolute;inset:0;border-radius:36px;background:#ebe6da;border:1px solid #ddd6c6}
+.ghost.g1{transform:translateY(12px) scale(.96) rotate(-1.2deg)}
+.ghost.g2{transform:translateY(22px) scale(.92) rotate(1.4deg);opacity:.7}
+.card{position:absolute;inset:0;perspective:1400px;touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none}
+.card.enter{animation:enter .28s ease-out}
+@keyframes enter{from{opacity:0;transform:translateX(var(--from,40px)) scale(.96)}}
+.inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.3,.8,.3,1)}
+.card.flipped .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:36px;padding:28px 26px 26px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column}
+.front{background:var(--card);border:1.5px solid var(--line);box-shadow:0 18px 36px -20px rgba(60,45,20,.35)}
+.back{background:var(--ink);color:#fff;transform:rotateY(180deg);box-shadow:0 22px 40px -18px rgba(20,15,5,.55)}
+.flabel{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--orange)}
+.back .flabel{color:#8d8878}
+.ftext{font-family:var(--head);font-weight:800;font-size:33px;line-height:1.08;letter-spacing:-.015em;margin:auto 0}
+.hint{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;font-weight:600}
+.hint svg{width:18px;height:18px}
+.rate{display:flex;gap:14px}
+.rate button{flex:1;height:64px;border-radius:22px;font-weight:700;font-size:18px;transition:transform .12s,background .2s}
+.rate button:active{transform:scale(.95)}
+.btn-groan{border:1.5px solid #4a463e;color:#fff}
+.btn-groan.on{background:#fff;color:var(--ink);border-color:#fff}
+.btn-lol{background:var(--orange);color:var(--ink)}
+.btn-lol.on{background:#ffb98c}
+.nav{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px}
+.nav .cap{font-size:15px;color:var(--muted);font-weight:500;text-align:center;line-height:1.3}
+.nav .cap b{display:block;color:var(--ink);font-size:13px}
+.round{width:78px;height:78px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .15s,opacity .2s}
+.round:active{transform:scale(.92)}
+.round svg{width:28px;height:28px}
+.round.l{background:var(--card);border:1.5px solid var(--line)}
+.round.r{background:var(--ink);color:#fff}
+.round[disabled]{opacity:.3;pointer-events:none}
+
+/* homework */
+.timer{margin-top:18px;background:var(--ink);color:#fff;border-radius:30px;padding:22px 20px 18px 30px;display:flex;align-items:center;gap:12px;transition:background .3s}
+.t-left{flex:1}
+.t-label{font-size:15px;font-weight:700;letter-spacing:.06em;color:var(--orange)}
+.timer.break .t-label{color:#7fdc9d}
+.t-time{font-family:var(--head);font-weight:800;font-size:52px;letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}
+.t-modes{display:flex;gap:6px;margin-top:6px}
+.t-modes button{font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;color:#a9a396;border:1px solid #3d3a33}
+.t-modes button.on{background:#fff;color:var(--ink);border-color:#fff}
+.t-reset{flex:none;width:58px;height:58px;border-radius:50%;border:1.5px solid #4a463e;display:flex;align-items:center;justify-content:center}
+.t-reset svg{width:24px;height:24px}
+.t-start{flex:none;height:58px;padding:0 26px;border-radius:29px;background:#fff;color:var(--ink);font-weight:700;font-size:18px;min-width:104px;transition:transform .12s}
+.t-start:active,.t-reset:active{transform:scale(.94)}
+.suggest{margin-top:12px;background:#dff4e4;border-radius:22px;padding:14px 14px 14px 20px;display:flex;align-items:center;gap:12px;animation:drop .35s ease-out}
+@keyframes drop{from{opacity:0;transform:translateY(-10px)}}
+.suggest p{flex:1;font-size:15px;font-weight:600;line-height:1.3;color:#164d2a}
+.suggest button{background:var(--ink);color:#fff;font-weight:700;font-size:14px;padding:11px 16px;border-radius:16px;white-space:nowrap}
+.prog{display:flex;align-items:center;gap:14px;margin:26px 0 18px;font-weight:700;font-size:19px}
+.bar{flex:1;height:9px;border-radius:5px;background:#e4dfd3;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--green);border-radius:5px;transition:width .4s}
+.filters{display:flex;gap:10px;align-items:center;margin-bottom:16px}
+.f{flex:none;white-space:nowrap;padding:11px 18px;border-radius:24px;border:1.5px solid var(--line);font-weight:600;font-size:16px;color:var(--muted);transition:all .2s}
+.f.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.clear{margin-left:auto;white-space:nowrap;font-size:14px;font-weight:700;color:var(--red);padding:8px 4px}
+.item{background:var(--card);border:1.5px solid var(--line);border-radius:28px;padding:18px 20px;margin-bottom:13px;display:flex;gap:16px;align-items:flex-start;transition:opacity .3s,transform .3s}
+.item.new{animation:drop .4s ease-out}
+.cb{width:40px;height:40px;flex:none;border-radius:12px;border:2.5px solid #d4cfc2;display:flex;align-items:center;justify-content:center;color:#fff;transition:all .2s;margin-top:2px}
+.cb svg{width:22px;height:22px;opacity:0;transform:scale(.4);transition:all .2s}
+.item.done .cb{background:var(--green);border-color:var(--green)}
+.item.done .cb svg{opacity:1;transform:none}
+.item.done .title{text-decoration:line-through;color:#9a9486}
+.item.done{opacity:.75}
+.title{font-size:19px;font-weight:500;line-height:1.25}
+.meta{display:flex;gap:10px;align-items:center;margin-top:10px;font-size:15px;font-weight:500;color:var(--muted)}
+.tag{font-weight:700;font-size:15px;padding:5px 11px;border-radius:9px}
+.due.today{color:var(--red)}
+.empty{text-align:center;padding:34px 20px 20px;color:var(--muted)}
+.empty .big{font-size:48px;margin-bottom:10px}
+.empty h3{font-family:var(--head);font-size:26px;color:var(--ink);margin-bottom:6px;letter-spacing:-.01em}
+.empty p{font-size:16px;line-height:1.4}
+.empty button{margin-top:18px;background:var(--ink);color:#fff;font-weight:700;padding:14px 24px;border-radius:24px;font-size:16px}
+.pad{height:24px}
+
+/* sheet */
+.sheet-host{position:absolute;inset:0;z-index:40;pointer-events:none}
+.sheet-bg{position:absolute;inset:0;background:rgba(20,15,5,0);transition:background .3s;pointer-events:none}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:34px 34px 0 0;padding:12px 24px 40px;transform:translateY(105%);transition:transform .38s cubic-bezier(.2,.8,.2,1);box-shadow:0 -20px 40px -20px rgba(0,0,0,.3)}
+.sheet-host.open{pointer-events:auto}
+.sheet-host.open .sheet-bg{background:rgba(20,15,5,.45);pointer-events:auto}
+.sheet-host.open .sheet{transform:none}
+.grab{width:44px;height:5px;border-radius:3px;background:#d4cfc2;margin:0 auto 18px}
+.sheet h3{font-family:var(--head);font-size:28px;font-weight:800;letter-spacing:-.015em;margin-bottom:16px}
+.sheet .ti{width:100%;font:inherit;font-size:18px;padding:16px 18px;border-radius:18px;border:1.5px solid var(--line);background:var(--card);outline:none}
+.sheet .ti:focus,.rt:focus{border-color:var(--ink)}
+.shot{width:100%;display:flex;align-items:center;gap:12px;text-align:left;padding:14px 16px;margin-bottom:14px;border-radius:18px;border:2px dashed #d4cfc2;color:var(--muted);font-size:14px;font-weight:600;line-height:1.3;transition:all .2s}
+.shot:hover,.shot.drag{border-color:var(--orange);background:#fff4ec;color:var(--ink)}
+.shot b{display:block;color:var(--ink);font-size:16px}
+.shot span.em{font-size:26px}
+.rd{padding:30px 0 10px;text-align:center;font-weight:600;color:var(--muted)}
+.rd .bar{margin:16px 0 0}
+.rd .bar i{background:var(--orange)}
+.rlist{max-height:300px;overflow-y:auto;margin:0 -6px;padding:0 6px;scrollbar-width:thin}
+.rrow{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+.rrow input[type=checkbox]{width:24px;height:24px;margin-top:10px;accent-color:var(--orange);flex:none}
+.rrow>div{flex:1;min-width:0}
+.rt{width:100%;font:inherit;font-size:16px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);outline:none}
+.rsel{display:flex;gap:8px;margin-top:8px}
+.rsel select{font:inherit;font-size:14px;font-weight:600;padding:6px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--card)}
+.rrow:not(.on) .rt,.rrow:not(.on) .rsel{opacity:.4}
+.link{display:block;margin:14px auto 0;font-weight:700;font-size:14px;color:var(--muted);text-decoration:underline}
+.note{font-size:14px;color:var(--muted);margin-bottom:10px;line-height:1.4}
+.lbl{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--muted);margin:20px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:10px 16px;border-radius:18px;font-weight:700;font-size:15px;border:2px solid transparent;transition:all .15s}
+.chip.plain{border-color:var(--line);color:var(--muted);font-weight:600}
+.chip.sel{border-color:var(--ink)}
+.chip.plain.sel{background:var(--ink);color:#fff}
+.sheet .go{width:100%;margin-top:26px;height:60px;border-radius:22px;background:var(--orange);font-weight:700;font-size:18px;transition:opacity .2s}
+.sheet .go[disabled]{opacity:.35;pointer-events:none}
+.foot{font-size:14px;color:var(--muted);font-weight:500;text-align:center}
+
+/* Phone: the app fills the screen, no device frame */
+body.mobile{display:block;height:100dvh;background:var(--bg);--tb:calc(62px + env(safe-area-inset-bottom,0px))}
+body.mobile .stage{display:block}
+body.mobile .wrap{width:100vw!important;height:100dvh!important}
+body.mobile .wrap:nth-child(2){display:none}
+body.mobile .phone{width:100%!important;height:100%!important;left:0!important;top:0!important;transform:none!important}
+body.mobile .bezel,body.mobile .island,body.mobile .status,body.mobile .home,body.mobile .foot{display:none}
+body.mobile .glass{border-radius:0}
+body.mobile .screen{padding-top:calc(env(safe-area-inset-top,0px) + 22px)}
+body.mobile .tabbar{padding:6px 24px env(safe-area-inset-bottom,0px)}
+body.mobile .tab{height:50px}
+body.mobile .screen{padding-left:18px;padding-right:18px}
+body.mobile .timer{padding:18px 14px 16px 20px;gap:8px}
+body.mobile .t-time{font-size:44px}
+body.mobile .t-reset{width:50px;height:50px}
+body.mobile .t-start{height:50px;min-width:84px;padding:0 18px;font-size:17px}
+body.mobile .f{padding:10px 15px;font-size:15px}
+body.mobile .filters{gap:8px}
+</style>
+</head>
+<body>
+<div class="stage" id="stage"></div>
+<div class="foot">Use the tab bar at the bottom of either phone to switch screens · tap a card to flip · drag to swipe</div>
+
+<script>
+const JOKES = [
+  ["Why was the math book sad?", "It had too many problems."],
+  ["Why did the student eat his homework?", "The teacher said it was a piece of cake."],
+  ["What's a teacher's favorite nation?", "Expla-nation."],
+  ["Why did the kid bring a ladder to school?", "Because he wanted to go to high school."],
+  ["Why was the equal sign so humble?", "It knew it wasn't less than or greater than anyone else."],
+  ["What did zero say to eight?", "Nice belt!"],
+  ["Why is history the sweetest subject?", "It's full of dates."],
+  ["Why did the scarecrow win a science award?", "He was outstanding in his field."],
+  ["Why did the music teacher need a ladder?", "To reach the high notes."],
+  ["Why can't you trust atoms?", "They make up everything."]
+];
+const SUBJECTS = {
+  English:["#e4e0fb","#413a8f"], Biology:["#cdeed6","#1c5a31"], Spanish:["#fdd6d6","#8a2a2a"],
+  History:["#fde3c6","#7a4310"], SAT:["#c4f0f4","#0f5560"], Math:["#fbf0b5","#6b5a08"], Art:["#f4d4ee","#7a2a6b"]
+};
+SUBJECTS.Other = ["#e8e4da","#4a463e"];
+const DUES = ["Today","Tomorrow","Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const DAY = {mon:"Mon",tue:"Tue",wed:"Wed",thu:"Thu",fri:"Fri",sat:"Sat",sun:"Sun"};
+const SUBJ_RULES = [
+  ["SAT", /\bsat\b|practice test/],
+  ["Spanish", /spanish|español|vocab|verbs?\b/],
+  ["Biology", /\bbio|\blab\b|cell|enzyme|dna|photosynth/],
+  ["History", /history|\bww[12i]|\bwar\b|revolution|civil rights|treaty/],
+  ["Math", /\bmath|algebra|geometry|calc|equation|problem set|worksheet|trig/],
+  ["Art", /\bart\b|sketch|draw|paint|portfolio/],
+  ["English", /english|read\b|reading|essay|novel|chapter|\bch\.|poem|book|gatsby|paragraph/]
+];
+
+/* Turn raw OCR text into homework entries */
+function parseShot(text){
+  const out = [];
+  for (const raw of text.split(/\r?\n/)) {
+    let line = raw.trim()
+      .replace(/^[\s\-–—•*·○●□☐☑✓✔|>~]+/, "")
+      .replace(/^[\[(][\sxX✓]?[\])]\s*/, "")
+      .replace(/^[oO0@©]\s+/, "");
+    if ((line.match(/[A-Za-z]/g) || []).length < 5) continue;
+    let due = "Tomorrow", m;
+    const re = /\b(?:due[:\s-]*)?(today|tonight|tomorrow|tmrw|mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:rs|rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\b\.?/i;
+    if ((m = line.match(re))) {
+      const w = m[1].toLowerCase();
+      due = /^to(day|night)/.test(w) ? "Today" : /^t(omorrow|mrw)/.test(w) ? "Tomorrow" : DAY[w.slice(0,3)];
+      line = line.replace(re, " ");
+    }
+    line = line.replace(/\(\s*\)/g, "").replace(/\s*\(?\bdue\b[:\s]*$/i, "").replace(/[\s\-–—:,;(\[]+$/, "").replace(/^[\s\-–—:,;)\]]+/, "").replace(/\s{2,}/g, " ");
+    if (line.length < 3) continue;
+    const low = line.toLowerCase();
+    const subj = (SUBJ_RULES.find(([,r])=>r.test(low)) || ["Other"])[0];
+    out.push({on:true, title:line.slice(0,60), subj, due});
+  }
+  return out;
+}
+let tessPromise;
+function loadTess(){
+  if (window.Tesseract) return Promise.resolve();
+  return tessPromise ||= new Promise((res,rej)=>{
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    s.onload = res; s.onerror = ()=>{ tessPromise = null; rej(new Error("offline")); };
+    document.head.appendChild(s);
+  });
+}
+
+const S = {
+  ratings: Array(JOKES.length).fill(null),
+  seen: new Set([0]),
+  nextId: 7,
+  hw: [
+    {id:1,title:"Read Ch. 7 — The Great Gatsby",subj:"English",due:"Today",done:false},
+    {id:2,title:"Lab report: enzyme reaction rates",subj:"Biology",due:"Tomorrow",done:false},
+    {id:3,title:"Spanish vocab quiz — unit 4",subj:"Spanish",due:"Tomorrow",done:false},
+    {id:4,title:"Outline WWI causes essay",subj:"History",due:"Fri",done:false},
+    {id:5,title:"Practice SAT reading section",subj:"SAT",due:"Sat",done:false},
+    {id:6,title:"Math problem set 5",subj:"Math",due:"Wed",done:true}
+  ]
+};
+/* Save everything on this device */
+const KEY = "homework-app:v1";
+try {
+  const d = JSON.parse(localStorage.getItem(KEY) || "null");
+  if (d && Array.isArray(d.hw) && Array.isArray(d.ratings) && d.ratings.length === JOKES.length) {
+    S.ratings = d.ratings; S.seen = new Set(d.seen); S.nextId = d.nextId; S.hw = d.hw;
+  }
+} catch(e){}
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify({ratings:S.ratings, seen:[...S.seen], nextId:S.nextId, hw:S.hw})); } catch(e){}
+}
+const DUR = {focus:25*60, break:5*60};
+const T = {mode:"focus", left:DUR.focus, running:false, id:null};
+
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+const ico = {
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  flip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg>',
+  reset:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg>',
+  left:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>',
+  right:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></svg>',
+  jokes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="4"/><path d="M8.5 10h.01M15.5 10h.01M8 14.2c1 1.4 2.3 2.1 4 2.1s3-.7 4-2.1"/></svg>',
+  hw:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="M9 4V3h6v1M9 13l2 2 4-4.5"/></svg>'
+};
+
+const phones = [];
+let SCALE = 1;
+const mq = matchMedia("(max-width:640px)");
+const renderAll = () => { save(); phones.forEach(p=>p.render()); };
+
+class Phone {
+  constructor(tab){
+    this.tab = tab; this.idx = 0; this.flipped = false; this.filter = "todo";
+    this.enter = null; this.bump = false; this.newId = null;
+    this.wrap = document.createElement("div"); this.wrap.className = "wrap";
+    this.wrap.innerHTML = `
+      <div class="phone">
+        <div class="bezel"></div>
+        <div class="glass">
+          <div class="island"></div>
+          <div class="status"><span>9:41</span><span class="ic">
+            <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="#1d1b17" stroke-width="2" stroke-linecap="round"><path d="M1.5 4.2a10 10 0 0 1 14 0M4 7a6.4 6.4 0 0 1 9 0"/><circle cx="8.5" cy="10" r="1.2" fill="#1d1b17" stroke="none"/></svg>
+            <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="#1d1b17" opacity=".4"/><rect x="2" y="2" width="20" height="9" rx="2.2" fill="#1d1b17"/><rect x="25" y="4.5" width="1.6" height="4" rx=".8" fill="#1d1b17" opacity=".4"/></svg>
+          </span></div>
+          <div class="screen"></div>
+          <div class="sheet-host"></div>
+          <nav class="tabbar">
+            <button class="tab" data-act="tab" data-tab="jokes">${ico.jokes}<span>Jokes</span></button>
+            <button class="tab" data-act="tab" data-tab="hw">${ico.hw}<span>Homework</span><b class="badge"></b></button>
+          </nav>
+          <div class="home"></div>
+        </div>
+      </div>`;
+    this.phone = $(".phone", this.wrap);
+    this.screen = $(".screen", this.wrap);
+    this.host = $(".sheet-host", this.wrap);
+    this.phone.addEventListener("click", e=>{
+      const b = e.target.closest("[data-act]");
+      if (b) this.act(b.dataset.act, b.dataset, b);
+    });
+    this.sheet = {subj:"English", due:"Tomorrow"};
+    this.render();
+  }
+
+  render(){
+    const st = this.screen.scrollTop;
+    this.screen.className = "screen " + this.tab;
+    this.tab === "jokes" ? this.renderJokes() : this.renderHw();
+    this.screen.scrollTop = st;
+    const todo = S.hw.filter(h=>!h.done).length;
+    this.wrap.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on", t.dataset.tab === this.tab));
+    const bd = $(".badge", this.wrap); bd.textContent = todo; bd.style.display = todo ? "" : "none";
+  }
+
+  /* ---------- Jokes ---------- */
+  renderJokes(){
+    const i = this.idx, [q,a] = JOKES[i], r = S.ratings[i];
+    const laughs = S.ratings.filter(x=>x==="lol").length;
+    const left = JOKES.length - 1 - i;
+    const segs = JOKES.map((_,k)=>`<div class="seg ${k===i?"cur":S.seen.has(k)?"seen":""}"></div>`).join("");
+    this.screen.innerHTML = `
+      <div class="hrow"><div><div class="eyebrow">Brain break</div><h1>Joke Cards</h1></div>
+        <div class="pill ${this.bump?"bump":""}">${laughs} ${laughs===1?"laugh":"laughs"}</div></div>
+      <div class="segs">${segs}</div>
+      <div class="deck">
+        ${left>1?'<div class="ghost g2"></div>':""}${left>0?'<div class="ghost g1"></div>':""}
+        <div class="card ${this.flipped?"flipped":""} ${this.enter?"enter":""}" style="--from:${this.enter==="l"?"-40px":"40px"}">
+          <div class="inner">
+            <div class="face front">
+              <div class="flabel">SETUP · ${i+1}/${JOKES.length}</div>
+              <div class="ftext">${esc(q)}</div>
+              <div class="hint">${ico.flip}Tap to flip</div>
+            </div>
+            <div class="face back">
+              <div class="flabel">PUNCHLINE</div>
+              <div class="ftext">${esc(a)}</div>
+              <div class="rate">
+                <button class="btn-groan ${r==="groan"?"on":""}" data-act="rate" data-v="groan">${r==="groan"?"✓ ":""}Groan</button>
+                <button class="btn-lol ${r==="lol"?"on":""}" data-act="rate" data-v="lol">${r==="lol"?"✓ ":""}LOL</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="nav">
+        <button class="round l" data-act="prev" ${i===0?"disabled":""} aria-label="Previous">${ico.left}</button>
+        <div class="cap">${S.seen.size===JOKES.length?"<b>All cards seen 🎉</b>":"Swipe or tap the arrows"}</div>
+        <button class="round r" data-act="next" ${i===JOKES.length-1?"disabled":""} aria-label="Next">${ico.right}</button>
+      </div>`;
+    this.enter = null; this.bump = false;
+    this.bindCard();
+  }
+
+  go(dir, fromSwipe){
+    const n = this.idx + dir;
+    const card = $(".card", this.screen);
+    if (n < 0 || n >= JOKES.length) { if (card) { card.style.transition="transform .25s"; card.style.transform=""; } return; }
+    if (card) {
+      card.style.transition = "transform .22s ease-in, opacity .22s";
+      card.style.transform = `translateX(${dir>0?-130:130}%) rotate(${dir>0?-12:12}deg)`;
+      card.style.opacity = 0;
+    }
+    setTimeout(()=>{
+      this.idx = n; this.flipped = false; S.seen.add(n);
+      this.enter = dir > 0 ? "r" : "l";
+      renderAll();
+    }, 200);
+  }
+
+  bindCard(){
+    const card = $(".card", this.screen); if (!card) return;
+    card.addEventListener("pointerdown", e=>{
+      if (e.target.closest("button")) return;
+      const x0 = e.clientX; let dx = 0, moved = false;
+      const mv = ev=>{
+        dx = (ev.clientX - x0) / SCALE;
+        if (Math.abs(dx) > 6) moved = true;
+        if (moved) { card.style.transition = "none"; card.style.transform = `translateX(${dx}px) rotate(${dx/22}deg)`; }
+      };
+      const up = ()=>{
+        removeEventListener("pointermove", mv); removeEventListener("pointerup", up); removeEventListener("pointercancel", up);
+        if (!moved) { this.flipped = !this.flipped; card.classList.toggle("flipped", this.flipped); return; }
+        if (Math.abs(dx) > 70) this.go(dx < 0 ? 1 : -1, true);
+        else { card.style.transition = "transform .25s"; card.style.transform = ""; }
+      };
+      addEventListener("pointermove", mv); addEventListener("pointerup", up); addEventListener("pointercancel", up);
+    });
+  }
+
+  /* ---------- Homework ---------- */
+  renderHw(){
+    const all = S.hw, done = all.filter(h=>h.done).length, total = all.length;
+    const list = this.filter==="todo" ? all.filter(h=>!h.done) : this.filter==="done" ? all.filter(h=>h.done) : all;
+    const date = new Date().toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
+    const pct = total ? Math.round(done/total*100) : 0;
+    let body;
+    if (list.length) {
+      body = list.map(h=>{
+        const [bg,fg] = SUBJECTS[h.subj] || ["#eee","#333"];
+        return `<div class="item ${h.done?"done":""} ${h.id===this.newId?"new":""}" data-id="${h.id}">
+          <button class="cb" data-act="toggle" data-id="${h.id}" aria-label="Toggle done">${ico.check}</button>
+          <div><div class="title">${esc(h.title)}</div>
+            <div class="meta"><span class="tag" style="background:${bg};color:${fg}">${h.subj}</span>
+            <span class="due ${h.due==="Today"&&!h.done?"today":""}">Due ${h.due}</span></div></div></div>`;
+      }).join("");
+    } else if (this.filter==="todo" && total) {
+      body = `<div class="empty"><div class="big">🎉</div><h3>All done!</h3><p>Every assignment is checked off. You've earned a laugh.</p><button data-act="read">Read a joke</button></div>`;
+    } else if (this.filter==="done") {
+      body = `<div class="empty"><div class="big">☑️</div><h3>Nothing checked off yet</h3><p>Finish an assignment and it will show up here.</p></div>`;
+    } else {
+      body = `<div class="empty"><div class="big">📚</div><h3>No homework</h3><p>Tap the + button to add your first assignment.</p></div>`;
+    }
+    this.screen.innerHTML = `
+      <div class="hrow"><div><div class="eyebrow">${date}</div><h1>Homework</h1></div>
+        <button class="fab" data-act="open" aria-label="Add homework">${ico.plus}</button></div>
+      <div class="timer ${T.mode}">
+        <div class="t-left"><div class="t-label">${T.mode==="focus"?"FOCUS SESSION":"BREAK TIME"}</div>
+          <div class="t-time">${fmt(T.left)}</div>
+          <div class="t-modes"><button class="${T.mode==="focus"?"on":""}" data-act="mode" data-m="focus">Focus 25</button><button class="${T.mode==="break"?"on":""}" data-act="mode" data-m="break">Break 5</button></div></div>
+        <button class="t-reset" data-act="treset" aria-label="Reset">${ico.reset}</button>
+        <button class="t-start" data-act="tstart">${T.running?"Pause":T.left<DUR[T.mode]?"Resume":"Start"}</button>
+      </div>
+      ${T.mode==="break"?`<div class="suggest"><p>😄 Nice work! Recharge with a joke while you rest.</p><button data-act="read">Read a joke</button></div>`:""}
+      <div class="prog"><span>${done} of ${total} done</span><div class="bar"><i style="width:${pct}%"></i></div></div>
+      <div class="filters">
+        ${[["todo","To do"],["done","Done"],["all","All"]].map(([k,l])=>`<button class="f ${this.filter===k?"on":""}" data-act="filter" data-f="${k}">${l}</button>`).join("")}
+        ${done?`<button class="clear" data-act="clear">Clear ${done} done</button>`:""}
+      </div>
+      <div class="list">${body}</div><div class="pad"></div>`;
+    this.newId = null;
+  }
+
+  /* ---------- Add sheet ---------- */
+  openSheet(){
+    this.job = (this.job||0) + 1;
+    this.host.innerHTML = `<div class="sheet-bg" data-act="close"></div>
+      <div class="sheet"><div class="grab"></div><div class="sbody"></div>
+        <input type="file" class="file" accept="image/*" hidden></div>`;
+    this.body = $(".sbody", this.host);
+    $(".file", this.host).addEventListener("change", e=>{ const f = e.target.files[0]; if (f) this.importShot(f); e.target.value = ""; });
+    this.body.addEventListener("input", e=>{
+      const row = e.target.closest(".rrow"); if (!row) return;
+      const d = this.draft[row.dataset.i];
+      if (e.target.classList.contains("rt")) d.title = e.target.value;
+    });
+    this.body.addEventListener("change", e=>{
+      const row = e.target.closest(".rrow"); if (!row) return;
+      const d = this.draft[row.dataset.i];
+      if (e.target.type === "checkbox") { d.on = e.target.checked; row.classList.toggle("on", d.on); this.updateCount(); }
+      else if (e.target.dataset.k) d[e.target.dataset.k] = e.target.value;
+    });
+    this.paintForm();
+    requestAnimationFrame(()=>this.host.classList.add("open"));
+  }
+  paintForm(focus=true){
+    this.sheet = {subj:"English", due:"Tomorrow"};
+    this.body.innerHTML = `<h3>New homework</h3>
+      <button class="shot" data-act="shot"><span class="em">📷</span><span><b>Import from a screenshot</b>Choose, drop or paste (Ctrl+V) an image of your homework list</span></button>
+      <input class="ti" maxlength="60" placeholder="Or type what you need to do…" autocomplete="off">
+      <div class="lbl">SUBJECT</div><div class="chips" data-g="subj"></div>
+      <div class="lbl">DUE</div><div class="chips" data-g="due"></div>
+      <button class="go" data-act="submit" disabled>Add homework</button>`;
+    this.paintChips();
+    const inp = $(".ti", this.body);
+    inp.addEventListener("input", ()=>{ $(".go", this.body).disabled = !inp.value.trim(); });
+    inp.addEventListener("keydown", e=>{ if (e.key==="Enter") this.act("submit"); });
+    if (focus) setTimeout(()=>{ if (this.host.classList.contains("open")) inp.focus({preventScroll:true}); }, 350);
+  }
+  paintReading(p, msg){
+    let rd = $(".rd", this.body);
+    if (!rd) {
+      this.body.innerHTML = `<h3>Reading screenshot</h3><div class="rd"><div class="msg"></div><div class="bar"><i></i></div></div>`;
+      rd = $(".rd", this.body);
+    }
+    $(".msg", rd).textContent = msg; $("i", rd).style.width = Math.round(p*100) + "%";
+  }
+  async importShot(file){
+    if (!file.type.startsWith("image/")) return;
+    const job = ++this.job;
+    this.paintReading(0.05, "Loading text reader…");
+    let draft = null, err = null;
+    try {
+      await loadTess();
+      const res = await Tesseract.recognize(file, "eng", {logger:m=>{
+        if (job === this.job && m.status === "recognizing text") this.paintReading(.1 + m.progress*.9, "Reading your screenshot…");
+      }});
+      draft = parseShot(res.data.text);
+    } catch(e){ err = e; }
+    if (job !== this.job) return;
+    this.draft = draft || [];
+    this.paintReview(err);
+  }
+  paintReview(err){
+    const d = this.draft;
+    if (!d.length) {
+      this.body.innerHTML = `<h3>${err?"Couldn't read that":"No entries found"}</h3>
+        <p class="note">${err?"The text reader needs an internet connection the first time it runs. Check your connection and try again.":"I couldn't find any homework lines. Try a sharper, closer screenshot of the list."}</p>
+        <button class="go" data-act="shot">Try another screenshot</button><button class="link" data-act="back">Type it in instead</button>`;
+      return;
+    }
+    const opts = (list, cur)=>list.map(v=>`<option ${v===cur?"selected":""}>${v}</option>`).join("");
+    this.body.innerHTML = `<h3>Found ${d.length} ${d.length===1?"entry":"entries"}</h3>
+      <p class="note">Check the details, untick anything you don't want, then add.</p>
+      <div class="rlist">${d.map((x,i)=>`<div class="rrow on" data-i="${i}">
+        <input type="checkbox" checked>
+        <div><input class="rt" maxlength="60" value="${esc(x.title)}">
+          <div class="rsel"><select data-k="subj">${opts(Object.keys(SUBJECTS), x.subj)}</select><select data-k="due">${opts(DUES, x.due)}</select></div></div></div>`).join("")}</div>
+      <button class="go" data-act="rsubmit"></button><button class="link" data-act="back">Cancel</button>`;
+    this.updateCount();
+  }
+  updateCount(){
+    const n = this.draft.filter(x=>x.on).length, b = $('[data-act="rsubmit"]', this.body);
+    if (b) { b.textContent = n ? `Add ${n} ${n===1?"item":"items"}` : "Select items to add"; b.disabled = !n; }
+  }
+  dropShot(file){
+    if (this.tab !== "hw") { this.tab = "hw"; this.render(); }
+    if (!this.host.classList.contains("open")) this.openSheet();
+    this.importShot(file);
+  }
+  paintChips(){
+    $('[data-g="subj"]', this.host).innerHTML = Object.entries(SUBJECTS).map(([k,[bg,fg]])=>
+      `<button class="chip ${this.sheet.subj===k?"sel":""}" style="background:${bg};color:${fg}" data-act="subj" data-v="${k}">${k}</button>`).join("");
+    $('[data-g="due"]', this.host).innerHTML = DUES.map(k=>
+      `<button class="chip plain ${this.sheet.due===k?"sel":""}" data-act="due" data-v="${k}">${k}</button>`).join("");
+  }
+  closeSheet(){ this.host.classList.remove("open"); }
+
+  /* ---------- Actions ---------- */
+  act(a, d={}, el){
+    switch(a){
+      case "tab": this.tab = d.tab; this.closeSheet(); this.render(); break;
+      case "prev": this.go(-1); break;
+      case "next": this.go(1); break;
+      case "rate": {
+        const i = this.idx; S.ratings[i] = S.ratings[i]===d.v ? null : d.v;
+        this.bump = d.v==="lol"; renderAll(); break;
+      }
+      case "toggle": {
+        const h = S.hw.find(x=>x.id==d.id); h.done = !h.done;
+        el.closest(".item").classList.toggle("done", h.done); save();
+        setTimeout(renderAll, 380); break;
+      }
+      case "filter": this.filter = d.f; this.render(); break;
+      case "clear": S.hw = S.hw.filter(h=>!h.done); renderAll(); break;
+      case "open": this.openSheet(); break;
+      case "close": this.closeSheet(); break;
+      case "subj": this.sheet.subj = d.v; this.paintChips(); break;
+      case "due": this.sheet.due = d.v; this.paintChips(); break;
+      case "submit": {
+        const inp = $(".ti", this.body); if (!inp) return;
+        const title = inp.value.trim(); if (!title) return;
+        const h = {id:S.nextId++, title, subj:this.sheet.subj, due:this.sheet.due, done:false};
+        S.hw.unshift(h); this.newId = h.id;
+        if (this.filter==="done") this.filter = "todo";
+        this.closeSheet(); renderAll(); this.screen.scrollTop = 0; break;
+      }
+      case "shot": $(".file", this.host).click(); break;
+      case "back": this.job++; this.paintForm(false); break;
+      case "rsubmit": {
+        const picked = this.draft.filter(x=>x.on && x.title.trim());
+        if (!picked.length) return;
+        picked.slice().reverse().forEach(x=>S.hw.unshift({id:S.nextId++, title:x.title.trim(), subj:x.subj, due:x.due, done:false}));
+        this.filter = "todo"; this.job++; this.closeSheet(); renderAll(); this.screen.scrollTop = 0; break;
+      }
+      case "read": this.tab = "jokes"; this.render(); break;
+      case "mode": setMode(d.m); break;
+      case "treset": T.left = DUR[T.mode]; stopTimer(); renderAll(); break;
+      case "tstart": T.running ? stopTimer() : startTimer(); renderAll(); break;
+    }
+  }
+}
+
+/* ---------- Pomodoro ---------- */
+function startTimer(){
+  if (T.running) return;
+  T.running = true;
+  T.id = setInterval(()=>{
+    T.left--;
+    if (T.left <= 0) {
+      const wasFocus = T.mode === "focus";
+      stopTimer(); T.mode = wasFocus ? "break" : "focus"; T.left = DUR[T.mode];
+      if (wasFocus) startTimer();           // break starts automatically, with a joke suggestion
+      renderAll();
+    } else document.querySelectorAll(".t-time").forEach(el=>el.textContent = fmt(T.left));
+  }, 1000);
+}
+function stopTimer(){ clearInterval(T.id); T.running = false; }
+function setMode(m){ stopTimer(); T.mode = m; T.left = DUR[m]; renderAll(); }
+
+/* ---------- Layout ---------- */
+const stage = $("#stage");
+phones.push(new Phone(mq.matches ? "hw" : "jokes"), new Phone("hw"));
+phones.forEach(p=>stage.appendChild(p.wrap));
+function fit(){
+  document.body.classList.toggle("mobile", mq.matches);
+  if (mq.matches) { SCALE = 1; return; }
+  const availH = innerHeight - 70, availW = innerWidth - 24;
+  SCALE = Math.max(.35, Math.min(1, availH/868, availW/(414*2+56)));
+  stage.style.gap = 56*SCALE + "px";
+  phones.forEach(p=>{
+    p.wrap.style.width = 414*SCALE + "px"; p.wrap.style.height = 868*SCALE + "px";
+    p.phone.style.left = p.phone.style.top = 12*SCALE + "px";
+    p.phone.style.transform = `scale(${SCALE})`;
+  });
+}
+addEventListener("resize", fit); fit();
+
+/* Screenshot import: paste (Ctrl+V) or drag an image onto a phone */
+const imgOf = items => [...(items||[])].map(i=>i.getAsFile ? i.getAsFile() : i).find(f=>f && f.type && f.type.startsWith("image/"));
+addEventListener("paste", e=>{
+  const f = imgOf(e.clipboardData && e.clipboardData.items); if (!f) return;
+  const p = phones.find(p=>p.host.classList.contains("open")) || phones.find(p=>p.tab==="hw");
+  if (p) { e.preventDefault(); p.dropShot(f); }
+});
+phones.forEach(p=>{
+  p.phone.addEventListener("dragover", e=>{ if ([...e.dataTransfer.types].includes("Files")) e.preventDefault(); });
+  p.phone.addEventListener("drop", e=>{ const f = imgOf(e.dataTransfer.files); if (f) { e.preventDefault(); p.dropShot(f); } });
+});
+if ("serviceWorker" in navigator && location.protocol.startsWith("http"))
+  addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+addEventListener("dragover", e=>e.preventDefault());
+addEventListener("drop", e=>e.preventDefault());
+</script>
+</body>
+</html>
