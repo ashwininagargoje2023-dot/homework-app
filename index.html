@@ -274,7 +274,8 @@ function loadTess(){
 }
 
 const S = {
-  ratings: Array(JOKES.length).fill(null),
+  ratings: Array(JOKES.length).fill(null),   // by joke
+  order: JOKES.map((_,i)=>i),                // deck position -> joke
   seen: new Set([0]),
   nextId: 7,
   hw: [
@@ -292,10 +293,11 @@ try {
   const d = JSON.parse(localStorage.getItem(KEY) || "null");
   if (d && Array.isArray(d.hw) && Array.isArray(d.ratings) && d.ratings.length === JOKES.length) {
     S.ratings = d.ratings; S.seen = new Set(d.seen); S.nextId = d.nextId; S.hw = d.hw;
+    if (Array.isArray(d.order) && d.order.length === JOKES.length) S.order = d.order;
   }
 } catch(e){}
 function save(){
-  try { localStorage.setItem(KEY, JSON.stringify({ratings:S.ratings, seen:[...S.seen], nextId:S.nextId, hw:S.hw})); } catch(e){}
+  try { localStorage.setItem(KEY, JSON.stringify({ratings:S.ratings, order:S.order, seen:[...S.seen], nextId:S.nextId, hw:S.hw})); } catch(e){}
 }
 const DUR = {focus:25*60, break:5*60};
 const T = {mode:"focus", left:DUR.focus, running:false, id:null};
@@ -366,7 +368,7 @@ class Phone {
 
   /* ---------- Jokes ---------- */
   renderJokes(){
-    const i = this.idx, [q,a] = JOKES[i], r = S.ratings[i];
+    const i = this.idx, j = S.order[i], [q,a] = JOKES[j], r = S.ratings[j], last = i === JOKES.length - 1;
     const laughs = S.ratings.filter(x=>x==="lol").length;
     const left = JOKES.length - 1 - i;
     const segs = JOKES.map((_,k)=>`<div class="seg ${k===i?"cur":S.seen.has(k)?"seen":""}"></div>`).join("");
@@ -396,8 +398,10 @@ class Phone {
       </div>
       <div class="nav">
         <button class="round l" data-act="prev" ${i===0?"disabled":""} aria-label="Previous">${ico.left}</button>
-        <div class="cap">${S.seen.size===JOKES.length?"<b>All cards seen 🎉</b>":"Swipe or tap the arrows"}</div>
-        <button class="round r" data-act="next" ${i===JOKES.length-1?"disabled":""} aria-label="Next">${ico.right}</button>
+        <div class="cap">${S.seen.size===JOKES.length?"<b>All cards seen 🎉</b>Tap ↻ to shuffle and play again":"Swipe or tap the arrows"}</div>
+        ${last
+          ? `<button class="round r again" data-act="restart" aria-label="Shuffle and play again">${ico.reset}</button>`
+          : `<button class="round r" data-act="next" aria-label="Next">${ico.right}</button>`}
       </div>`;
     this.enter = null; this.bump = false;
     this.bindCard();
@@ -635,8 +639,17 @@ class Phone {
       case "tab": this.tab = d.tab; this.closeSheet(); this.render(); break;
       case "prev": this.go(-1); break;
       case "next": this.go(1); break;
+      case "restart": {
+        for (let k = S.order.length - 1; k > 0; k--) {         // reshuffle; ratings and LOL count are kept
+          const m = Math.floor(Math.random() * (k + 1));
+          [S.order[k], S.order[m]] = [S.order[m], S.order[k]];
+        }
+        S.seen = new Set([0]);
+        phones.forEach(p=>{ p.idx = 0; p.flipped = false; });
+        this.enter = "r"; renderAll(); break;
+      }
       case "rate": {
-        const i = this.idx; S.ratings[i] = S.ratings[i]===d.v ? null : d.v;
+        const j = S.order[this.idx]; S.ratings[j] = S.ratings[j]===d.v ? null : d.v;
         this.bump = d.v==="lol"; renderAll(); break;
       }
       case "toggle": {
